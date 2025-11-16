@@ -1,5 +1,5 @@
-use serde::ser;
-use thiserror::Error; // Import ser module from serde for Error trait
+use serde::{de, ser};
+use thiserror::Error;
 
 /// Represents errors that can occur during serialization or deserialization
 /// using the Store format.
@@ -17,6 +17,12 @@ pub enum StoreError {
 
 // Implement the Serde error traits for StoreError
 impl ser::Error for StoreError {
+    fn custom<T: std::fmt::Display>(msg: T) -> Self {
+        StoreError::Serde(msg.to_string())
+    }
+}
+
+impl de::Error for StoreError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
         StoreError::Serde(msg.to_string())
     }
