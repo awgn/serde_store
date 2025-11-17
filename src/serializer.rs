@@ -221,7 +221,7 @@ impl Serializer for &mut StoreSerializer {
         Ok(())
     }
 
-    // Haskell store encodes enum variants with a Word64le discriminant (index),
+    // Haskell store encodes enum variants with a Word8 discriminant (index),
     // followed by variant data if any. Unit variants have no data.
     fn serialize_unit_variant(
         self,
@@ -229,7 +229,7 @@ impl Serializer for &mut StoreSerializer {
         variant_index: u32,
         _variant_name: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        self.write_u64(variant_index as u64) // Discriminant as Word64le
+        self.write_u8(variant_index as u8) // Discriminant as Word8
     }
 
     // Haskell store encodes newtype structs by serializing the inner value.
@@ -244,7 +244,7 @@ impl Serializer for &mut StoreSerializer {
         value.serialize(self)
     }
 
-    // Haskell store encodes newtype variants with Word64le discriminant + inner value.
+    // Haskell store encodes newtype variants with Word8 discriminant + inner value.
     fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
@@ -255,7 +255,7 @@ impl Serializer for &mut StoreSerializer {
     where
         T: ?Sized + Serialize,
     {
-        self.write_u64(variant_index as u64)?; // Discriminant as Word64le
+        self.write_u8(variant_index as u8)?; // Discriminant as Word8
         value.serialize(self)
     }
 
@@ -283,7 +283,7 @@ impl Serializer for &mut StoreSerializer {
         Ok(self)
     }
 
-    // Tuple Variants. Haskell store encodes with Word64le discriminant + tuple elements.
+    // Tuple Variants. Haskell store encodes with Word8 discriminant + tuple elements.
     fn serialize_tuple_variant(
         self,
         _name: &'static str,
@@ -291,7 +291,7 @@ impl Serializer for &mut StoreSerializer {
         _variant_name: &'static str,
         _len: usize, // Length of the tuple part is implicit, not written here
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        self.write_u64(variant_index as u64)?; // Discriminant as Word64le
+        self.write_u8(variant_index as u8)?; // Discriminant as Word8
         Ok(self)
     }
 
@@ -314,7 +314,7 @@ impl Serializer for &mut StoreSerializer {
         Ok(self)
     }
 
-    // Struct Variants. Haskell store encodes with Word64le discriminant + struct fields.
+    // Struct Variants. Haskell store encodes with Word8 discriminant + struct fields.
     fn serialize_struct_variant(
         self,
         _name: &'static str,
@@ -322,7 +322,7 @@ impl Serializer for &mut StoreSerializer {
         _variant_name: &'static str,
         _len: usize, // Length of the struct part is implicit, not written here
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        self.write_u64(variant_index as u64)?; // Discriminant as Word64le
+        self.write_u8(variant_index as u8)?; // Discriminant as Word8
         Ok(self)
     }
 }
@@ -805,24 +805,24 @@ mod tests {
 
     #[test]
     fn test_enum() {
-        // Enums (Sums) serialize with Word64le discriminant + variant data (if any)
+        // Enums (Sums) serialize with Word8 discriminant + variant data (if any)
 
         // Unit variant
         let e_a = TestEnum::A;
-        let expected_a = u64_le(0); // Variant index 0 as u64 LE
+        let expected_a = vec![0u8]; // Variant index 0 as u8
         assert_eq!(to_bytes(&e_a).unwrap(), expected_a);
 
         // Newtype variant
         let e_b = TestEnum::B(42_u32);
-        let mut expected_b = u64_le(1); // Variant index 1 as u64 LE
+        let mut expected_b = vec![1u8]; // Variant index 1 as u8
         expected_b.extend_from_slice(&u32_le(42)); // Wrapped value (u32 LE)
         assert_eq!(to_bytes(&e_b).unwrap(), expected_b);
 
         // Struct variant
-        let e_c = TestEnum::C { x: 1, y: 2 };
-        let mut expected_c = u64_le(2); // Variant index 2 as u64 LE
-        expected_c.extend_from_slice(&i32_le(1)); // Field x (i32 LE)
-        expected_c.extend_from_slice(&i32_le(2)); // Field y (i32 LE)
+        let e_c = TestEnum::C { x: 10_i32, y: 20_i32 };
+        let mut expected_c = vec![2u8]; // Variant index 2 as u8
+        expected_c.extend_from_slice(&i32_le(10)); // field x (i32 LE)
+        expected_c.extend_from_slice(&i32_le(20)); // field y (i32 LE)
         assert_eq!(to_bytes(&e_c).unwrap(), expected_c);
     }
 }

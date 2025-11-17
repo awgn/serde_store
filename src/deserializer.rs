@@ -1,6 +1,6 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use serde::de::{
-    self, value::U64Deserializer, DeserializeSeed, EnumAccess, MapAccess, SeqAccess,
+    self, value::U8Deserializer, DeserializeSeed, EnumAccess, MapAccess, SeqAccess,
     VariantAccess, Visitor,
 };
 use serde::Deserialize;
@@ -359,9 +359,9 @@ impl<'de, R: Read> de::Deserializer<'de> for &mut StoreDeserializer<R> {
         V: Visitor<'de>,
     {
         // Used for field names, variant names, etc.
-        // In Store format, we use indices, so we deserialize as u64
-        let idx = self.read_u64()?;
-        visitor.visit_u64(idx)
+        // In Store format, we use indices, so we deserialize as u8
+        let idx = self.read_u8()?;
+        visitor.visit_u8(idx)
     }
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -461,9 +461,9 @@ impl<'de, 'a, R: Read> EnumAccess<'de> for StoreEnumAccess<'a, R> {
     where
         V: DeserializeSeed<'de>,
     {
-        // Read the variant index (u64 in store format)
-        let idx = self.de.read_u64()?;
-        let val: V::Value = seed.deserialize(U64Deserializer::<StoreError>::new(idx))?;
+        // Read the variant index (u8 in store format, matching Haskell)
+        let idx = self.de.read_u8()?;
+        let val: V::Value = seed.deserialize(U8Deserializer::<StoreError>::new(idx))?;
         Ok((val, self))
     }
 }
@@ -507,7 +507,7 @@ impl<'de, 'a, R: Read> VariantAccess<'de> for StoreEnumAccess<'a, R> {
 
 /// Deserializes a value from binary data compatible with the Haskell `store` library.
 ///
-/// Assumes little-endian and uses Word64le for lengths and enum discriminants.
+/// Assumes little-endian and uses Word64le for lengths and Word8 for enum discriminants.
 pub fn from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T, StoreError>
 where
     T: Deserialize<'a>,
