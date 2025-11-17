@@ -17,64 +17,78 @@ use crate::error::StoreError;
 ///
 /// This implementation is based on the analysis of the Haskell `store`
 /// library's source code and decoding rules.
+#[derive(Debug)]
 pub struct StoreDeserializer<R> {
     reader: R,
 }
 
 impl<R: Read> StoreDeserializer<R> {
     /// Creates a new deserializer reading from the given reader.
+    #[inline]
     pub fn new(reader: R) -> Self {
         StoreDeserializer { reader }
     }
 
     // These methods directly map to Haskell store's primitive decoding using LittleEndian.
+    #[inline]
     fn read_u8(&mut self) -> Result<u8, StoreError> {
         self.reader.read_u8().map_err(Into::into)
     }
 
+    #[inline]
     fn read_i8(&mut self) -> Result<i8, StoreError> {
         self.reader.read_i8().map_err(Into::into)
     }
 
+    #[inline]
     fn read_u16(&mut self) -> Result<u16, StoreError> {
         self.reader.read_u16::<LittleEndian>().map_err(Into::into)
     }
 
+    #[inline]
     fn read_i16(&mut self) -> Result<i16, StoreError> {
         self.reader.read_i16::<LittleEndian>().map_err(Into::into)
     }
 
+    #[inline]
     fn read_u32(&mut self) -> Result<u32, StoreError> {
         self.reader.read_u32::<LittleEndian>().map_err(Into::into)
     }
 
+    #[inline]
     fn read_i32(&mut self) -> Result<i32, StoreError> {
         self.reader.read_i32::<LittleEndian>().map_err(Into::into)
     }
 
+    #[inline]
     fn read_u64(&mut self) -> Result<u64, StoreError> {
         self.reader.read_u64::<LittleEndian>().map_err(Into::into)
     }
 
+    #[inline]
     fn read_i64(&mut self) -> Result<i64, StoreError> {
         self.reader.read_i64::<LittleEndian>().map_err(Into::into)
     }
 
+    #[inline]
     fn read_f32(&mut self) -> Result<f32, StoreError> {
         self.reader.read_f32::<LittleEndian>().map_err(Into::into)
     }
 
+    #[inline]
     fn read_f64(&mut self) -> Result<f64, StoreError> {
         self.reader.read_f64::<LittleEndian>().map_err(Into::into)
     }
 
     // Matches Haskell store's length decoding for collections, Text, ByteString (Word64le).
+    #[inline]
     fn read_len(&mut self) -> Result<usize, StoreError> {
         let len = self.read_u64()?;
         Ok(len as usize)
     }
 
     // Matches Haskell store's Text decoding (Word64le length + UTF8 bytes).
+    #[inline]
     fn read_text(&mut self) -> Result<String, StoreError> {
         let len = self.read_len()?;
         let mut buf = vec![0u8; len];
@@ -83,6 +97,7 @@ impl<R: Read> StoreDeserializer<R> {
     }
 
     // Matches Haskell store's ByteString decoding (Word64le length + raw bytes).
+    #[inline]
     fn read_bytes(&mut self) -> Result<Vec<u8>, StoreError> {
         let len = self.read_len()?;
         let mut buf = vec![0u8; len];
@@ -95,7 +110,7 @@ impl<R: Read> StoreDeserializer<R> {
 // Implement serde::Deserializer for StoreDeserializer
 // ===========================================================================
 
-impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut StoreDeserializer<R> {
+impl<'de, R: Read> de::Deserializer<'de> for &mut StoreDeserializer<R> {
     type Error = StoreError;
 
     fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
@@ -361,14 +376,14 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut StoreDeserializer<R> {
 // Helper structs for compound types
 // ===========================================================================
 
-struct StoreSeqAccess<'a, R: Read> {
+struct StoreSeqAccess<'a, R> {
     de: &'a mut StoreDeserializer<R>,
     remaining: usize,
 }
 
 impl<'a, R: Read> StoreSeqAccess<'a, R> {
-    fn new(de: &'a mut StoreDeserializer<R>, len: usize) -> Self {
-        StoreSeqAccess { de, remaining: len }
+    fn new(de: &'a mut StoreDeserializer<R>, remaining: usize) -> Self {
+        StoreSeqAccess { de, remaining }
     }
 }
 
@@ -391,14 +406,14 @@ impl<'de, 'a, R: Read> SeqAccess<'de> for StoreSeqAccess<'a, R> {
     }
 }
 
-struct StoreMapAccess<'a, R: Read> {
+struct StoreMapAccess<'a, R> {
     de: &'a mut StoreDeserializer<R>,
     remaining: usize,
 }
 
 impl<'a, R: Read> StoreMapAccess<'a, R> {
-    fn new(de: &'a mut StoreDeserializer<R>, len: usize) -> Self {
-        StoreMapAccess { de, remaining: len }
+    fn new(de: &'a mut StoreDeserializer<R>, remaining: usize) -> Self {
+        StoreMapAccess { de, remaining }
     }
 }
 
@@ -428,7 +443,7 @@ impl<'de, 'a, R: Read> MapAccess<'de> for StoreMapAccess<'a, R> {
     }
 }
 
-struct StoreEnumAccess<'a, R: Read> {
+struct StoreEnumAccess<'a, R> {
     de: &'a mut StoreDeserializer<R>,
 }
 

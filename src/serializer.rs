@@ -19,60 +19,96 @@ use crate::error::StoreError;
 ///
 /// This implementation is based on the analysis of the Haskell `store`
 /// library's source code and encoding rules.
+#[derive(Debug)]
 pub struct StoreSerializer {
     // The buffer where we write the bytes.
     output: Vec<u8>,
 }
 
+impl Default for StoreSerializer {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StoreSerializer {
     /// Creates a new serializer writing to an in-memory buffer.
+    #[inline]
     pub fn new() -> Self {
         StoreSerializer { output: Vec::new() }
     }
 
+    /// Creates a new serializer with pre-allocated capacity.
+    #[inline]
+    pub fn with_capacity(capacity: usize) -> Self {
+        StoreSerializer {
+            output: Vec::with_capacity(capacity),
+        }
+    }
+
     /// Returns the serialized bytes.
+    #[inline]
     pub fn into_inner(self) -> Vec<u8> {
         self.output
     }
 
+    /// Returns a reference to the internal buffer.
+    #[inline]
+    pub fn as_slice(&self) -> &[u8] {
+        &self.output
+    }
+
     // These methods directly map to Haskell store's primitive encoding using LittleEndian.
+    #[inline]
     fn write_u8(&mut self, v: u8) -> Result<(), StoreError> {
         self.output.write_u8(v).map_err(Into::into)
     }
+    #[inline]
     fn write_i8(&mut self, v: i8) -> Result<(), StoreError> {
         self.output.write_i8(v).map_err(Into::into)
     }
+    #[inline]
     fn write_u16(&mut self, v: u16) -> Result<(), StoreError> {
         self.output.write_u16::<LittleEndian>(v).map_err(Into::into)
     }
+    #[inline]
     fn write_i16(&mut self, v: i16) -> Result<(), StoreError> {
         self.output.write_i16::<LittleEndian>(v).map_err(Into::into)
     }
+    #[inline]
     fn write_u32(&mut self, v: u32) -> Result<(), StoreError> {
         self.output.write_u32::<LittleEndian>(v).map_err(Into::into)
     }
+    #[inline]
     fn write_i32(&mut self, v: i32) -> Result<(), StoreError> {
         self.output.write_i32::<LittleEndian>(v).map_err(Into::into)
     }
+    #[inline]
     fn write_u64(&mut self, v: u64) -> Result<(), StoreError> {
         self.output.write_u64::<LittleEndian>(v).map_err(Into::into)
     }
+    #[inline]
     fn write_i64(&mut self, v: i64) -> Result<(), StoreError> {
         self.output.write_i64::<LittleEndian>(v).map_err(Into::into)
     }
+    #[inline]
     fn write_f32(&mut self, v: f32) -> Result<(), StoreError> {
         self.output.write_f32::<LittleEndian>(v).map_err(Into::into)
     }
+    #[inline]
     fn write_f64(&mut self, v: f64) -> Result<(), StoreError> {
         self.output.write_f64::<LittleEndian>(v).map_err(Into::into)
     }
 
     // Matches Haskell store's length encoding for collections, Text, ByteString (Word64le).
+    #[inline]
     fn write_len(&mut self, len: usize) -> Result<(), StoreError> {
         self.write_u64(len as u64)
     }
 
     // Matches Haskell store's Text encoding (Word64le length + UTF8 bytes).
+    #[inline]
     fn write_text(&mut self, s: &str) -> Result<(), StoreError> {
         self.write_len(s.len())?;
         self.output.write_all(s.as_bytes())?;
@@ -80,6 +116,7 @@ impl StoreSerializer {
     }
 
     // Matches Haskell store's ByteString encoding (Word64le length + raw bytes).
+    #[inline]
     fn write_bytes(&mut self, b: &[u8]) -> Result<(), StoreError> {
         self.write_len(b.len())?;
         self.output.write_all(b)?;
@@ -91,7 +128,7 @@ impl StoreSerializer {
 // Implement serde::Serializer for &mut BinarySerializer
 // ===========================================================================
 
-impl<'a> Serializer for &'a mut StoreSerializer {
+impl Serializer for &mut StoreSerializer {
     type Ok = ();
     type Error = StoreError;
 
@@ -104,36 +141,47 @@ impl<'a> Serializer for &'a mut StoreSerializer {
     type SerializeStructVariant = Self;
 
     // Primitive types match Haskell store's fixed-size LE encoding.
+    #[inline]
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         self.write_u8(v as u8)
     }
+    #[inline]
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
         self.write_i8(v)
     }
+    #[inline]
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
         self.write_i16(v)
     }
+    #[inline]
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
         self.write_i32(v)
     }
+    #[inline]
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
         self.write_i64(v)
     }
+    #[inline]
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
         self.write_u8(v)
     }
+    #[inline]
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
         self.write_u16(v)
     }
+    #[inline]
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
         self.write_u32(v)
     }
+    #[inline]
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
         self.write_u64(v)
     }
+    #[inline]
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
         self.write_f32(v)
     }
+    #[inline]
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
         self.write_f64(v)
     }
@@ -156,9 +204,9 @@ impl<'a> Serializer for &'a mut StoreSerializer {
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
         self.write_u8(0)
     } // 0x00 for Nothing
-    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         self.write_u8(1)?; // 0x01 for Just
         value.serialize(self)
@@ -185,19 +233,19 @@ impl<'a> Serializer for &'a mut StoreSerializer {
     }
 
     // Haskell store encodes newtype structs by serializing the inner value.
-    fn serialize_newtype_struct<T: ?Sized>(
+    fn serialize_newtype_struct<T>(
         self,
         _name: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         value.serialize(self)
     }
 
     // Haskell store encodes newtype variants with Word64le discriminant + inner value.
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
         variant_index: u32,
@@ -205,7 +253,7 @@ impl<'a> Serializer for &'a mut StoreSerializer {
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         self.write_u64(variant_index as u64)?; // Discriminant as Word64le
         value.serialize(self)
@@ -287,115 +335,145 @@ impl<'a> Serializer for &'a mut StoreSerializer {
 // For Haskell store, the elements/fields are just serialized sequentially.
 // ===========================================================================
 
-impl<'a> SerializeSeq for &'a mut StoreSerializer {
+impl SerializeSeq for &mut StoreSerializer {
     type Ok = ();
     type Error = StoreError;
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    
+    #[inline]
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         value.serialize(&mut **self)
     }
+    
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
 }
 
-impl<'a> SerializeTuple for &'a mut StoreSerializer {
+impl SerializeTuple for &mut StoreSerializer {
     type Ok = ();
     type Error = StoreError;
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    
+    #[inline]
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         value.serialize(&mut **self)
     }
+    
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
 }
 
-impl<'a> SerializeTupleStruct for &'a mut StoreSerializer {
+impl SerializeTupleStruct for &mut StoreSerializer {
     type Ok = ();
     type Error = StoreError;
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    
+    #[inline]
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         value.serialize(&mut **self)
     }
+    
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
 }
 
-impl<'a> SerializeTupleVariant for &'a mut StoreSerializer {
+impl SerializeTupleVariant for &mut StoreSerializer {
     type Ok = ();
     type Error = StoreError;
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    
+    #[inline]
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         value.serialize(&mut **self)
     }
+    
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
 }
 
-impl<'a> SerializeMap for &'a mut StoreSerializer {
+impl SerializeMap for &mut StoreSerializer {
     type Ok = ();
     type Error = StoreError;
-    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
+    
+    #[inline]
+    fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         key.serialize(&mut **self)
     }
-    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    
+    #[inline]
+    fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         value.serialize(&mut **self)
     }
+    
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
 }
 
-impl<'a> SerializeStruct for &'a mut StoreSerializer {
+impl SerializeStruct for &mut StoreSerializer {
     type Ok = ();
     type Error = StoreError;
-    fn serialize_field<T: ?Sized>(
+    
+    #[inline]
+    fn serialize_field<T>(
         &mut self,
         _key: &'static str,
         value: &T,
     ) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         // Fields are serialized sequentially without names or delimiters.
         value.serialize(&mut **self)
     }
+    
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
 }
 
-impl<'a> SerializeStructVariant for &'a mut StoreSerializer {
+impl SerializeStructVariant for &mut StoreSerializer {
     type Ok = ();
     type Error = StoreError;
-    fn serialize_field<T: ?Sized>(
+    
+    #[inline]
+    fn serialize_field<T>(
         &mut self,
         _key: &'static str,
         value: &T,
     ) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         // Fields are serialized sequentially without names or delimiters.
         value.serialize(&mut **self)
     }
+    
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
