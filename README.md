@@ -14,6 +14,7 @@ This library provides Serde serializers and deserializers that are compatible wi
 - ✅ **Idempotent**: Serialize-deserialize roundtrips preserve data exactly
 - ✅ **Type-safe**: Leverages Rust's type system for correctness
 - ✅ **Comprehensive tests**: Extensive test coverage including roundtrip tests
+- ✅ **Optional features**: Support for `Either` and `SmolStr` types via cargo features
 
 ## Format Specification
 
@@ -38,6 +39,10 @@ The format follows Haskell `store` conventions:
 - **Map**: `u64` count (LE) + key-value pairs
 - **Set**: `u64` count (LE) + elements
 
+### Tuples
+- Elements serialized sequentially (no length prefix)
+- Supported up to 7 elements (matching Haskell Store)
+
 ### Structs and Tuples (Products)
 - Fields are serialized sequentially
 - **No length prefix** (length is implicit from schema)
@@ -54,6 +59,19 @@ Add to your `Cargo.toml`:
 [dependencies]
 serde_store = "0.1"
 serde = { version = "1.0", features = ["derive"] }
+```
+
+### Optional Features
+
+```toml
+# Enable Either support (Haskell's Either a b)
+serde_store = { version = "0.1", features = ["either"] }
+
+# Enable SmolStr support (small string optimization)
+serde_store = { version = "0.1", features = ["smol_str"] }
+
+# Enable all features
+serde_store = { version = "0.1", features = ["either", "smol_str"] }
 ```
 
 ### Basic Example
@@ -168,25 +186,57 @@ let person: Person = from_bytes(&haskell_bytes).unwrap();
 let bytes = to_bytes(&person).unwrap();
 ```
 
+### Using Either (Optional Feature)
+
+```rust
+use either::Either;
+use serde_store::{to_bytes, from_bytes};
+
+// Either works like Haskell's Either a b
+let left: Either<i32, String> = Either::Left(42);
+let right: Either<i32, String> = Either::Right("error".to_string());
+
+let bytes = to_bytes(&left).unwrap();
+let decoded: Either<i32, String> = from_bytes(&bytes).unwrap();
+```
+
+### Using SmolStr (Optional Feature)
+
+```rust
+use smol_str::SmolStr;
+use serde_store::{to_bytes, from_bytes};
+
+// SmolStr is binary-compatible with String
+let s = SmolStr::new("hello");
+let bytes = to_bytes(&s).unwrap();
+
+// Can deserialize as String
+let as_string: String = from_bytes(&bytes).unwrap();
+// Or as SmolStr
+let as_smolstr: SmolStr = from_bytes(&bytes).unwrap();
+```
+
 ## Type Mappings
 
-| Rust Type | Haskell Type |
-|-----------|--------------|
-| `bool` | `Bool` |
-| `u8`, `u16`, `u32`, `u64` | `Word8`, `Word16`, `Word32`, `Word64` |
-| `i8`, `i16`, `i32`, `i64` | `Int8`, `Int16`, `Int32`, `Int64` |
-| `f32`, `f64` | `Float`, `Double` |
-| `String` | `Text` |
-| `Vec<u8>` | `ByteString` |
-| `Option<T>` | `Maybe T` |
-| `Vec<T>` | `[T]` or `Vector T` |
-| `(T1, T2, ...)` | `(T1, T2, ...)` |
-| `HashMap<K, V>` | `HashMap K V` |
-| `BTreeMap<K, V>` | `Map K V` |
-| `HashSet<T>` | `HashSet T` |
-| `BTreeSet<T>` | `Set T` |
-| Struct | Product type |
-| Enum | Sum type |
+| Rust Type | Haskell Type | Notes |
+|-----------|--------------|-------|
+| `bool` | `Bool` | |
+| `u8`, `u16`, `u32`, `u64` | `Word8`, `Word16`, `Word32`, `Word64` | |
+| `i8`, `i16`, `i32`, `i64` | `Int8`, `Int16`, `Int32`, `Int64` | |
+| `f32`, `f64` | `Float`, `Double` | |
+| `String` | `Text` | |
+| `Vec<u8>` | `ByteString` | |
+| `Option<T>` | `Maybe T` | |
+| `Vec<T>` | `[T]` or `Vector T` | |
+| `(T1, T2, ...)` | `(T1, T2, ...)` | Up to 7 elements |
+| `HashMap<K, V>` | `HashMap K V` | |
+| `BTreeMap<K, V>` | `Map K V` | |
+| `HashSet<T>` | `HashSet T` | |
+| `BTreeSet<T>` | `Set T` | |
+| `Either<L, R>` | `Either L R` | Requires `either` feature |
+| `SmolStr` | `Text` | Requires `smol_str` feature, binary-compatible with `String` |
+| Struct | Product type | |
+| Enum | Sum type | |
 
 ## Implementation Details
 
@@ -197,12 +247,15 @@ The following Rust types are fully supported:
 - ✅ All primitive numeric types
 - ✅ Strings (UTF-8)
 - ✅ Byte arrays and vectors
-- ✅ Options
-- ✅ Tuples (up to arbitrary arity via Serde)
+- ✅ Options (`Option<T>`)
+- ✅ Tuples (1-7 elements, matching Haskell Store support)
 - ✅ Structs (named and tuple structs)
 - ✅ Enums (unit, newtype, tuple, and struct variants)
 - ✅ Collections (Vec, HashMap, BTreeMap, HashSet, BTreeSet)
 - ✅ Arrays
+- ✅ Either type (with `either` feature)
+- ✅ SmolStr (with `smol_str` feature, binary-compatible with String)
+- ✅ Any type implementing `Serialize`/`Deserialize`
 
 ### Limitations
 
@@ -219,11 +272,17 @@ The library includes comprehensive tests:
 # Run all tests
 cargo test
 
+# Run with all features
+cargo test --all-features
+
 # Run with verbose output
 cargo test -- --nocapture
 
 # Run specific test suites
 cargo test --test roundtrip_tests
+cargo test --test tuple_tests
+cargo test --features either --test either_tests
+cargo test --features smol_str --test smolstr_tests
 ```
 
 ### Test Coverage
@@ -232,8 +291,12 @@ cargo test --test roundtrip_tests
 - **Strings**: ASCII, Unicode, empty strings, long strings
 - **Collections**: Vectors, maps, sets (both hash-based and tree-based)
 - **Complex types**: Nested structs, enums with data, options
+- **Tuples**: All sizes (1-7 elements), nested tuples, tuples with complex types
+- **Either**: Left/Right variants, nested Either, with Options/Vecs (requires `either` feature)
+- **SmolStr**: Short/long strings, Unicode, interchangeability with String (requires `smol_str` feature)
 - **Idempotence**: Serialize-deserialize cycles preserve data exactly
 - **Binary stability**: Same value always produces same bytes
+- **Haskell interop**: Full test suite with Haskell Store echo server
 
 ## Performance
 
@@ -271,3 +334,7 @@ This project follows the same license as the Haskell `store` library (MIT).
 - Comprehensive test suite
 - Haskell `store` format compatibility
 - Support for all common Rust types
+- Tuple support (1-7 elements)
+- Optional `Either` support (via cargo feature)
+- Optional `SmolStr` support (via cargo feature)
+- Full Haskell interoperability test suite
