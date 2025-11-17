@@ -1,0 +1,65 @@
+name:                haskell-server
+version:             0.1.0.0
+github:              "githubuser/haskell-server"
+license:             BSD-3-Clause
+author:              "Nicola via Sonnet 4.5"
+maintainer:          "nicola.bonelli@gmail.com"
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/haskell-server#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- scotty >= 0.12
+- store >= 0.7.18
+- text >= 2.0
+- bytestring >= 0.11
+- http-types >= 0.12
+- wai >= 3.2
+- wai-extra >= 3.1
+- warp >= 3.3
+- containers >= 0.6
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wpartial-fields
+- -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+executables:
+  haskell-server-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - haskell-server
+
+tests:
+  haskell-server-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - haskell-server
