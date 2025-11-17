@@ -328,7 +328,7 @@ This project follows the same license as the Haskell `store` library (MIT).
 
 ## Version History
 
-### 0.1.0 (Initial Release)
+### 0.2.0 (Initial Release)
 - Full serializer implementation
 - Full deserializer implementation
 - Comprehensive test suite

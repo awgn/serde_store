@@ -497,7 +497,7 @@ decoded `shouldBe` Right original
 ## Version Compatibility
 
 - **Haskell store:** >= 0.7.0 recommended
-- **Rust serde_store:** 0.1.0
+- **Rust serde_store:** 0.2.0
 - **Haskell text:** >= 2.0 required for UTF-8
 - **Endianness:** Little-endian only (x86, ARM modern)
 
