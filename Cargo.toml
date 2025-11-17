@@ -2,6 +2,8 @@
 name = "serde_store"
 version = "0.1.0"
 edition = "2021"
+description = "A serialization format focused on speed and compactness"
+license = "MIT or GPL-3.0"
 
 [features]
 either = ["dep:either"]
