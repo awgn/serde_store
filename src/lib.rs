@@ -157,14 +157,17 @@
 //!     email: Option<String>,
 //! }
 //!
-//! // Decode bytes from Haskell
-//! # let haskell_bytes = vec![]; // placeholder
-//! # #[cfg(never_run_this_code)]
-//! let person: Person = from_bytes(&haskell_bytes).unwrap();
-//!
-//! // Encode for Haskell
-//! # let person = Person { name: "Alice".to_string(), age: 30, email: None };
+//! // Create a person to encode for Haskell
+//! let person = Person { 
+//!     name: "Alice".to_string(), 
+//!     age: 30, 
+//!     email: Some("alice@example.com".to_string()),
+//! };
 //! let bytes = to_bytes(&person).unwrap();
+//!
+//! // These bytes can be decoded in Haskell using the store library
+//! // In Rust, decode them back:
+//! let decoded: Person = from_bytes(&bytes).unwrap();
 //! ```
 //!
 //! ## Type Mappings
@@ -231,11 +234,11 @@
 //!
 //! ## Error Handling
 //!
-//! All serialization and deserialization functions return a `Result<T, Error>`:
+//! All serialization and deserialization functions return a `Result<T, StoreError>`:
 //!
 //! ```rust
 //! use serde::{Serialize, Deserialize};
-//! use serde_store::{to_bytes, from_bytes, error::Error};
+//! use serde_store::{to_bytes, from_bytes, error::StoreError};
 //!
 //! #[derive(Serialize, Deserialize)]
 //! struct Data {
