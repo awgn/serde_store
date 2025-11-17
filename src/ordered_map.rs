@@ -26,7 +26,7 @@ use std::hash::Hash;
 /// Magic marker that indicates a map is stored in ascending order.
 /// This value matches the Haskell store library's `markMapPokedInAscendingOrder`.
 ///
-/// See: https://github.com/fpco/store/issues/97
+/// See: <https://github.com/fpco/store/issues/97>
 pub const ASCENDING_MAP_MARKER: u32 = 1217678090;
 
 /// Wrapper type for BTreeMap that serializes with the Haskell store ascending order marker.

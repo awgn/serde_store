@@ -1,13 +1,23 @@
 [package]
 name = "serde_store"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "A serialization format focused on speed and compactness"
-license = "MIT or GPL-3.0"
+description = "A Rust implementation of the Haskell store binary serialization format using Serde"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/awgn/serde_store"
+homepage = "https://github.com/awgn/serde_store"
+documentation = "https://docs.rs/serde_store"
+readme = "README.md"
+keywords = ["serialization", "serde", "haskell", "store", "binary"]
+categories = ["encoding", "no-std"]
 
 [features]
 either = ["dep:either"]
 smol_str = ["dep:smol_str"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 byteorder = "1.5.0"
